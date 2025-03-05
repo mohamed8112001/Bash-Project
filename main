@@ -1,0 +1,272 @@
+#!/usr/bin/bash
+shopt -s extglob
+
+path="/home/m_mustafa/Project/Database"
+if [ -e $path ]
+then
+	cd $path
+else
+	mkdir $path 
+	cd $path
+	echo "DBMS is ready"
+fi
+
+function Create_Database()
+{
+        read -p "enter name of database: " database_name
+	regex="^[a-zA-Z][a-zA-Z0-9_]*$"
+	if [[ $database_name =~ $regex ]]
+ 		then
+
+		if [[ -e "$database_name"  ]]
+		then
+			echo "The Database is Exist!"
+		else
+		mkdir $database_name
+		echo "Database is created successfuly"
+		fi
+	else
+	    echo "Invalid database name. Use only letters, numbers, and underscores. It must start with a letter."
+	fi
+}
+
+function Create_Table1()
+{
+        read -p "enter name of table: " table_name
+        regex="^[a-zA-Z][a-zA-Z0-9_]*$"
+        if [[ $table_name =~ $regex ]]
+                then
+
+                if [[ -f "$table_name"  ]]
+                then
+                        echo "The table is Exist!"
+                else
+                #touch $table_name
+		read -p "Please enter columns number to be created: " num_cols
+		PK=0
+		for (( i=0; i<$num_cols; i++ ))
+		do
+			line=""
+			read -p "please enter column name: " col_name
+			line+="$col_name"
+			read -p "please enter column datatype: " col_datatype
+			line+=:"$col_datatype"
+			if [[ $PK -eq 0 ]]
+			then
+				read -p "Do you want to make this column pk(y/n)" check_pk
+				if [[ "$check_pk" =~ "yes" ||"$check_pk" =~ "y"  ]]
+				then
+					line+=:"PK"
+					PK=1
+				fi
+			fi
+#			echo $line >> .$table_name"metadata"
+	                echo "$line" >> $table_name
+
+		done
+		touch "$table_name"
+                echo "Table is created successfuly"
+                fi
+        else
+            echo "Invalid Table name. Use only letters, numbers, and underscores. "
+        fi
+}
+function Create_Table() {
+    read -p "Enter table name: " table_name
+    regex="^[a-zA-Z][a-zA-Z0-9_]*$"
+    if [[ $table_name =~ $regex ]]; then
+        if [[ -f "$table_name" ]]; then
+            echo "The table already exists!"
+        else
+            read -p "Enter the number of columns: " num_cols
+            PK=0
+            metadata=""
+
+            for ((i = 0; i < num_cols; i++)); do
+                line=""
+                read -p "Enter column name: " col_name
+                line+="$col_name"
+
+                read -p "Enter column datatype: " col_datatype
+                line+=":$col_datatype"
+
+                if [[ $PK -eq 0 ]]; then
+                    read -p "Do you want to make this column PK? (y/n) " check_pk
+                    if [[ "$check_pk" =~ ^[Yy](es)?$ ]]; then
+                        line+=":PK"
+                        PK=1
+                    fi
+                fi
+
+                metadata+="$line\n"
+            done
+
+            echo -e "$metadata" >".$table_name.metadata"
+            touch "$table_name"
+            echo "Table created successfully."
+        fi
+    else
+        echo "Invalid table name. Use only letters, numbers, and underscores."
+    fi
+}
+
+List_Databasess() {
+    # Store only directories in the array
+  #  mapfile -t Databases < <(find . -maxdepth 1 -type d -printf "%f\n")
+	ls
+    # Loop through the array and print each directory
+   # for i in "${!Databases[@]}"; do
+    #    echo "${Databases[i]}"
+   # done	
+}
+
+function List_Databases()
+{
+	Databases=($(find . -maxdepth 1 -type d -printf "%f\n"))
+  #      Databases=($(ls))
+         #for i in "${!Databases[@]}";
+	 for i in "${!Databases[@]}";
+                do
+
+#                        if [[ -d $Databases[i]  ]]
+ #                       then
+                                echo "${Databases[$i]}"
+  #                      fi
+                done
+
+
+}
+function Insert_Data() {
+    read -p "Enter table name to insert data: " table_name
+    if [[ ! -f "$table_name" ]]; then
+        echo "Table does not exist!"
+        return
+    fi
+
+    metadata_file=".$table_name.metadata"
+    if [[ ! -f "$metadata_file" ]]; then
+        echo "Metadata file missing!"
+        return
+    fi
+
+    IFS=$'\n' read -d '' -r -a columns <"$metadata_file"
+    data_entry=""
+    pk_value=""
+
+    for column in "${columns[@]}"; do
+        col_name=$(echo "$column" | cut -d':' -f1)
+        col_datatype=$(echo "$column" | cut -d':' -f2)
+        is_pk=$(echo "$column" | grep -o "PK")
+
+        read -p "Enter value for $col_name ($col_datatype): " value
+
+        if [[ "$is_pk" == "PK" ]]; then
+            if grep -q "^$value:" "$table_name"; then
+                echo "Error: Duplicate primary key value!"
+                return
+            fi
+            pk_value="$value"
+        fi
+
+        if [[ -z "$data_entry" ]]; then
+            data_entry="$value"
+        else
+            data_entry+=":$value"
+        fi
+    done
+
+    echo "$data_entry" >>"$table_name"
+    echo "Data inserted successfully!"
+}
+function Select_From_Table() {
+    read -p "Enter table name to select data from: " table_name
+    if [[ ! -f "$table_name" ]]; then
+        echo "Table does not exist!"
+        return
+    fi
+
+    echo "===== Table: $table_name ====="
+    cat "$table_name"
+    echo "============================="
+}
+
+function Select_Database()
+{
+read -p "Please Enter Database name: " SelectedDatabase
+	if [[ -e "$SelectedDatabase"  ]]
+        then
+		cd $SelectedDatabase
+                echo "$SelectedDatabase Database is selected"
+        else
+	        echo "Database is not exist"
+        fi
+
+}
+function Drop_Database()
+{
+read -p "Please Enter Database name: " DropDatabase
+        if [[ -e "$DropDatabase"  ]]
+        then
+                cd $DropDatabase
+                echo "$DropDatabase Database is drop"
+        else
+                echo "Database is not exist"
+        fi
+}
+
+select option in 'Create Database' 'List Databases' 'Select Database' 'Drop Database' 'Exit'
+do 
+case $option in
+"Create Database")
+
+	Create_Database
+	#echo create database 
+	;;
+"List Databases")
+	List_Databases
+	#echo List 
+	;;
+"Select Database")
+	echo connect
+	Select_Database
+
+	select option in "Create Table" "List Tables" "Insert Data" "Select From Table" "Exit"
+	do
+	case $option in
+	"Create Table")
+		Create_Table
+		
+		;;
+        "List Tables")
+		echo "list"
+		;;
+	"Insert Data")
+		Insert_Data
+		;;
+ 	"Select From Table")
+		Select_From_Table
+		;;
+        "Exit")
+		break
+		;;
+        *)
+		echo unknown
+		;;
+	esac
+	done
+
+
+
+	;;
+"Drop Database")
+	echo drop 
+	Drop_Database
+	;;
+"Exit")
+	break
+	;;
+*)
+	echo unknown 
+	;;
+esac
+done
