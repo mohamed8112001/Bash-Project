@@ -1,7 +1,7 @@
 #!/usr/bin/bash
 shopt -s extglob
 
-path="/home/m_mustafa/Project/Database"
+path="/home/m_mustafa/Project"
 if [ -e "$path" ]; then
     cd "$path"
 else
@@ -15,12 +15,15 @@ function Create_Database() {
         read -p "Enter name of database: " database_name
         regex="^[a-zA-Z][a-zA-Z0-9_]*$"
         if [[ $database_name =~ $regex ]]; then
-            if [[ -e "$database_name" ]]; then
+               if [[ -e "$path/$database_name" ]]; then
+
                 echo "The Database already exists!"
             else
-                mkdir "$database_name"
+                mkdir "$path/$database_name"
+		cd ..
                 echo "Database created successfully."
             fi
+	    cd "$path"
             break
         else
             echo "Invalid database name. Use only letters, numbers, and underscores. It must start with a letter."
@@ -143,11 +146,11 @@ function Select_Database() {
         if [[ "$SelectedDatabase" == "q" ]]; then
             return
         fi
-        if [[ -d "$SelectedDatabase" ]]; then
-            cd "$SelectedDatabase"
+        if [[ -d "$path/$SelectedDatabase" ]]; then
+            cd "$path/$SelectedDatabase"
             echo "$SelectedDatabase is now selected."
             Database_Menu
-            cd ..
+            cd "$path"
         else
             echo "Database does not exist."
         fi
