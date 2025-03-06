@@ -107,9 +107,14 @@ function Select_From_Table() {
         echo "Table does not exist!"
         return
     fi
-    echo "===== Table: $table_name ====="
-    cat "$table_name"
-    echo "============================="
+
+	head -n 1 ".$table_name.metadata" | awk -F: '{for (i=1; i<=2; i++) printf "%-15s", $i; print ""}'
+
+    	echo "---------------------------------------------------"
+   	awk -F"|" '{for (i=1; i<=NF; i++) printf "%-15s", $i; print ""}' "$table_name"
+
+    	echo "===================================================="
+
 }
 
 function Drop_Table() {
@@ -126,7 +131,7 @@ function Database_Menu() {
     while true; do
         echo -e "\nTable Menu:"
         echo "1) Create Table   2) List Tables   3) Drop Table   4) Insert Data"
-        echo "5) View Table     6) Exit"
+        echo "5) View Table     6) Update_Data   7) Exit"
         read -p "#? " choice
         case $choice in
             1) Create_Table ;;
@@ -134,7 +139,8 @@ function Database_Menu() {
             3) Drop_Table ;;
             4) Insert_Data ;;
             5) Select_From_Table ;;
-            6) cd ..; break ;;
+            6) Update_Data ;;
+	    7) cd ..; break ;;
             *) echo "Invalid choice, please select again." ;;
         esac
     done
@@ -166,7 +172,28 @@ function Drop_Database() {
         echo "Database does not exist."
     fi
 }
+function Update_Data() {
+    read -p "Enter table name to update data: " table_name
+    if [[ ! -f "$table_name" ]]; then
+        echo "Table does not exist!"
+        return
+    fi
 
+    read -p "Enter primary key value of the record to update: " pk_value
+    row_number=$(awk -F "|" -v pk="$pk_value" '$1 == pk {print NR}' "$table_name")
+
+    if [[ -z "$row_number" ]]; then
+        echo "Record not found!"
+        return
+    fi
+
+    read -p "Enter column number to update (starting from 1): " col_number
+    read -p "Enter new value: " new_value
+
+    awk -F "|" -v row="$row_number" -v col="$col_number" -v new_val="$new_value" 'BEGIN {OFS="|"} {if (NR == row) $col = new_val}1' "$table_name" > temp && mv temp "$table_name"
+
+    echo "Data updated successfully!"
+}
 function Main_Menu() {
     while true; do
         echo -e "\nDatabase Menu:"
